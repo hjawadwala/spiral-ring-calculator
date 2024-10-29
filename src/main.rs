@@ -32,6 +32,7 @@ fn show_banner() {
 :......::::..:::::..:::......:::..::::..::........:::::..:::::
     "#;
     println!("{}", banner);
+    println!("#################### Spiral ring Calculator #####################")
 }
 
 fn perform_calculation() {
