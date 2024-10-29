@@ -1,115 +1,75 @@
 use std::io;
 
 fn main() {
-    loop {
-        // Start a new calculation
-        perform_calculation();
+    // Prompt for input parameters
+    let inner_diameter = get_input("Enter the inner diameter (in mm): ");
+    let outer_diameter = get_input("Enter the outer diameter (in mm): ");
+    let width = get_input("Enter the width of the ring (in mm): ");
+    let thickness1 = get_input("Enter the thickness of Material 1 (in mm): ");
+    let density1 = get_input("Enter the density of Material 1 (in g/cm³): ") * 0.001; // Convert g/cm³ to g/mm³
+    let thickness2 = get_input("Enter the thickness of Material 2 (in mm): ");
+    let density2 = get_input("Enter the density of Material 2 (in g/cm³): ") * 0.001; // Convert g/cm³ to g/mm³
+    let rounds_material1_initial = get_input_int("Enter number of rounds material 1 will wind initially: ")
+    let rounds_material1_final = get_input_int("Enter number of rounds mateiral 1 will wind externally: ")
 
-        // Ask the user if they want to perform another calculation
-        let choice = get_input_choice("Do you want to perform another calculation? (y/n): ");
-        if choice.to_lowercase() != "y" {
-            println!("Exiting the program.");
-            break;
-        }
+
+    // Number of initial and final rounds where only Material 1 is used
+    //let rounds_material1_initial = 3;
+    //let rounds_material1_final = 3;
+
+    // Initialize lengths and diameter for tracking
+    let mut length_material_1 = 0.0;
+    let mut length_material_2 = 0.0;
+
+    // Calculate effective inner diameter after the initial 3 rounds of Material 1
+    let mut current_diameter = inner_diameter;
+    for _ in 0..rounds_material1_initial {
+        let circumference = std::f64::consts::PI * current_diameter;
+        length_material_1 += circumference;
+        current_diameter += 2.0 * thickness1;
     }
-}
+    let effective_inner_diameter_phase2 = current_diameter;
 
-fn perform_calculation() {
-    // Variables for inner and outer diameter
-    let mut inner_diameter: f64;
-    let mut outer_diameter: f64;
-
-    // Read the inner and outer diameters
-    inner_diameter = get_input("Enter the inner diameter (in mm): ");
-    outer_diameter = get_input("Enter the outer diameter (in mm): ");
-
-    // Ensure outer diameter is greater than inner diameter
-    if outer_diameter <= inner_diameter {
-        println!("Outer diameter must be greater than inner diameter.");
-        return;
+    // Calculate effective outer diameter for the second phase after winding inward from the outer diameter
+    current_diameter = outer_diameter;
+    for _ in 0..rounds_material1_final {
+        let circumference = std::f64::consts::PI * current_diameter;
+        length_material_1 += circumference;
+        current_diameter -= 2.0 * thickness1;
     }
+    let effective_outer_diameter_phase2 = current_diameter;
 
-    // Calculate available radial thickness
-    let max_radial_thickness = (outer_diameter - inner_diameter) / 2.0;
-    let mut cumulative_thickness = 0.0;
-
-    let mut layer_count = 0;
-    let mut layer_data = Vec::new();
-    let mut total_weight_grams = 0.0;
-    let mut total_cost = 0.0;
-
-    loop {
-        let thickness = get_input("Enter the thickness of the material layer (in mm), or type 0 to stop: ");
-        
-        // If user enters 0, stop asking for more layers, but at least one material must be provided
-        if thickness == 0.0 && layer_count > 0 {
-            break;
-        } else if thickness == 0.0 {
-            println!("You must enter at least one layer of material.");
-            continue;
-        }
-
-        // Check if adding the layer exceeds the available radial thickness
-        if cumulative_thickness + thickness > max_radial_thickness {
-            println!("Exceeded available radial space. Cannot add more layers.");
-            break;
-        }
-
-        // Get the density of the material (in g/cm³, converted to kg/mm³)
-        let density = get_input("Enter the density of the material (in g/cm³): ") / 1000.0; // g/cm³ to kg/mm³
-
-        // Get rate type: 1 for rate/kg, 2 for rate/meter
-        let rate_type = get_input("Enter rate type (1 for rate per kg, 2 for rate per meter): ");
-        
-        // Get the rate of the material
-        let rate = get_input("Enter the rate of the material: ");
-
-        // Calculate the average diameter for this layer
-        let avg_diameter = inner_diameter + 2.0 * cumulative_thickness;
-
-        // Calculate the material length (circumference) for this layer in mm
-        let length = std::f64::consts::PI * avg_diameter; // mm
-
-        // Calculate the volume of the layer (Length x Thickness) in mm³
-        let volume = length * thickness; // mm³
-
-        // Calculate the weight in kilograms (Volume in mm³ x Density in kg/mm³)
-        let weight_kg = volume * density; // kg
-
-        // Convert weight from kilograms to grams
-        let weight_grams = weight_kg * 1000.0; // grams
-        total_weight_grams += weight_grams;
-
-        // Calculate the cost based on rate type
-        let cost = if rate_type == 1.0 {
-            // Rate per kg
-            weight_kg * rate
-        } else {
-            // Rate per meter
-            length * rate / 1000.0 // Convert length from mm to meters
-        };
-        total_cost += cost;
-
-        // Store the data for this layer
-        layer_data.push((layer_count + 1, thickness, avg_diameter, length, weight_grams, cost));
-
-        // Update cumulative thickness and layer count
-        cumulative_thickness += thickness;
-        layer_count += 1;
+    // Calculate length for the middle rounds with both Material 1 and Material 2
+    current_diameter = effective_inner_diameter_phase2;
+    while current_diameter <= effective_outer_diameter_phase2 {
+        let circumference = std::f64::consts::PI * current_diameter;
+        length_material_1 += circumference;
+        length_material_2 += circumference;
+        current_diameter += 2.0 * (thickness1 + thickness2);
     }
 
-    // Print the results in a table format
-    println!("\nLayer\tThickness (mm)\tAvg Diameter (mm)\tMaterial Length (mm)\tWeight (grams)\tCost");
-    for (layer, thickness, avg_diameter, length, weight_grams, cost) in &layer_data {
-        println!(
-            "{:<5}\t{:<15.2}\t{:<20.2}\t{:<20.2}\t{:<15.2}\t{:<10.2}",
-            layer, thickness, avg_diameter, length, weight_grams, cost
-        );
-    }
+    // Calculate the volume for each material
+    let volume_material_1 = length_material_1 * width * thickness1;
+    let volume_material_2 = length_material_2 * width * thickness2;
 
-    // Print total weight in grams and total cost
-    println!("\nTotal weight of the spiral: {:.2} grams", total_weight_grams);
-    println!("Total cost of the spiral: {:.2} currency units", total_cost);
+    // Calculate the weight for each material
+    let weight_material_1 = volume_material_1 * density1;
+    let weight_material_2 = volume_material_2 * density2;
+
+    // Print the results
+    println!("\nMaterial Lengths and Weights:");
+    println!(
+        "Material 1: Length = {:.2} mm, Volume = {:.2} mm³, Weight = {:.2} grams",
+        length_material_1, volume_material_1, weight_material_1
+    );
+    println!(
+        "Material 2: Length = {:.2} mm, Volume = {:.2} mm³, Weight = {:.2} grams",
+        length_material_2, volume_material_2, weight_material_2
+    );
+    println!(
+        "Total Weight of the Spiral Ring: {:.2} grams",
+        weight_material_1 + weight_material_2
+    );
 }
 
 // Function to get user input for a number and convert to f64
@@ -125,10 +85,14 @@ fn get_input(prompt: &str) -> f64 {
     }
 }
 
-// Function to get user input for a choice (like 'y' or 'n')
-fn get_input_choice(prompt: &str) -> String {
-    let mut input = String::new();
-    println!("{}", prompt);
-    io::stdin().read_line(&mut input).expect("Failed to read line");
-    input.trim().to_string()
+fn get_input_int(prompt: &str) -> i32 {
+    loop {
+        let mut input = String::new();
+        println!("{}", prompt);
+        io::stdin().read_line(&mut input).expect("Failed to read line");
+        match input.trim().parse::<i32>() {
+            Ok(value) => return value,
+            Err(_) => println!("Please enter a valid integer."),
+        }
+    }
 }
