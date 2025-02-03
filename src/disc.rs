@@ -4,7 +4,7 @@ pub fn perform_calculation() {
     let width = get_input("Enter the width of the sheet (in mm): ");
     let length = get_input("Enter the length of the sheet (in mm): ");
     let thickness = get_input("Enter the thickness of the sheet (in mm): ");
-    let sheet_weight = get_input("Enter the weight of the sheet (in kg): ");
+    let sheet_weight = get_input("Enter the weight of the sheet (in grams): ");
     let sheet_cost = get_input("Enter the total cost of the sheet: ");
     let disc_diameter = get_input("Enter the diameter of the disc (in mm): ");
     let margin = get_input("Enter the margin between two adjacent discs (in mm): ");
@@ -15,16 +15,16 @@ pub fn perform_calculation() {
     println!("\n--- Disc Calculation Results ---");
     println!("1. Total number of full discs: {}", total_discs);
     println!("2. Cost of each disc: {:.2}", disc_cost);
-    println!("3. Weight of each disc: {:.3} kg", disc_weight);
-    println!("4. Total wastage in kg: {:.3} kg", total_wastage);
+    println!("3. Weight of each disc: {:.2} g", disc_weight);
+    println!("4. Total wastage in g: {:.2} g", total_wastage);
 }
 
-// Function to calculate disc details correctly
+// Function to calculate disc details (all weights in grams)
 fn calculate_disc_details(
     width: f64,
     length: f64,
     thickness: f64,
-    sheet_weight: f64,
+    sheet_weight: f64,  // Now in grams
     sheet_cost: f64,
     disc_diameter: f64,
     margin: f64,
@@ -50,7 +50,7 @@ fn calculate_disc_details(
     let sheet_area = width * length;
     let disc_area = std::f64::consts::PI * radius * radius;
 
-    // Correct way to calculate weight
+    // Correct way to calculate weight in grams
     let disc_weight = (disc_area / sheet_area) * sheet_weight;
     let disc_cost = (disc_weight / sheet_weight) * sheet_cost;
     let total_wastage = sheet_weight - (total_discs as f64 * disc_weight);
